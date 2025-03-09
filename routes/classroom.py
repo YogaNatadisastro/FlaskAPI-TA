@@ -26,7 +26,7 @@ def getClassroom(id):
         'class_name': classroom.class_name,
         'description': classroom.description,
         'enroll_key': classroom.enroll_key,
-        'user_id': classroom.id
+        'user_id': classroom.user_id
     }), 200 
 
 @classroomBp.route('/classrooms', methods=['POST'])

@@ -3,7 +3,7 @@ from models.user import User
 from models import db
 from werkzeug.security import generate_password_hash
 
-userBp = Blueprint('api', __name__)
+userBp = Blueprint('user', __name__)
 
 @userBp.route('/users', methods=['GET'])
 def getAllUsers():
@@ -13,7 +13,7 @@ def getAllUsers():
         result.append({
             'id': u.id,
             'full_name': u.full_name,
-            'birth_name': str(u.birth_name),
+            'birth_date': u.birth_date,
             'username': u.username,
             'email': u.email,
             'role_id': u.role_id
@@ -27,7 +27,7 @@ def getUserById(id):
     return jsonify({
         'id': user.id,
         'full_name': user.full_name,
-        'birth_name': str(user.birth_name),
+        'birth_date': user.birth_date,
         'username': user.username,
         'emaol': user.email,
         'role_id': user.role_id
