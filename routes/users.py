@@ -12,11 +12,15 @@ def getAllUsers():
     for u in users:
         result.append({
             'id': u.id,
-            'full_name': u.full_name,
+            'first_name': u.first_name,
+            'last_name' : u.last_name,
             'birth_date': u.birth_date,
             'username': u.username,
             'email': u.email,
-            'role_id': u.role_id
+            'role': {
+                'id': u.role.id,
+                'name_role': u.role.name_role
+            } if u.role else None
         })
     return jsonify(result), 200
 
@@ -26,9 +30,13 @@ def getUserById(id):
     user = User.query.get_or_404(id)
     return jsonify({
         'id': user.id,
-        'full_name': user.full_name,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
         'birth_date': user.birth_date,
         'username': user.username,
-        'emaol': user.email,
-        'role_id': user.role_id
+        'email': user.email,
+        'role': {
+            'id': user.role.id,
+            'name_role': user.role.name_role
+        } if user.role else None
     }), 200

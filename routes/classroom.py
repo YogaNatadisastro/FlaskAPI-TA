@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models.classroom import Classroom
+from models.classroom.Classroom import Classroom
 from models import db
 
 classroomBp = Blueprint('classroom', __name__)
@@ -14,9 +14,18 @@ def getAllClassrooms():
             'class_name': c.class_name,
             'description': c.description,
             'enroll_key': c.enroll_key,
-            'user_id': c.user_id
+            'user': {
+                'id': c.user.id,
+                'username': c.user.username,
+                'email': c.user.email
+            } if c.user else None,
+            'subject': {
+                'id': c.subject.id,
+                'name': c.subject.subject_name,
+            } if c.subject else None
         })
     return jsonify(result), 200
+
 
 @classroomBp.route('/classrooms/<int:id>', methods=['GET'])
 def getClassroom(id):
@@ -26,8 +35,17 @@ def getClassroom(id):
         'class_name': classroom.class_name,
         'description': classroom.description,
         'enroll_key': classroom.enroll_key,
-        'user_id': classroom.user_id
-    }), 200 
+        'user': {
+                'id': classroom.user.id,
+                'username': classroom.user.username,
+                'email': classroom.user.email
+            } if classroom.user else None,
+            'subject': {
+                'id': classroom.subject.id,
+                'name': classroom.subject.subject_name,
+            } if classroom.subject else None
+        }), 200
+
 
 @classroomBp.route('/classrooms', methods=['POST'])
 def createClassroom():
@@ -36,24 +54,28 @@ def createClassroom():
         class_name=data.get('class_name'),
         description=data.get('description'),
         enroll_key=data.get('enroll_key'),
-        user_id=data.get('user_id')
+        user_id=data.get('user_id'),
+        subject_id=data.get('subject_id') 
     )
     db.session.add(newClassroom)
     db.session.commit()
     return jsonify({'message': 'Classroom created successfully'}), 201
 
+
 @classroomBp.route('/classrooms/<int:id>', methods=['PUT'])
 def updateClassroom(id):
     data = request.get_json()
-    classroom = Classroom.query.get_or_404(id)
+    classroom = Classroom.query.get_or_404(id) 
 
     classroom.class_name = data.get('class_name', classroom.class_name)
     classroom.descrpition = data.get('description', classroom.description)
     classroom.enroll_key = data.get('enroll_key', classroom.enroll_key)
     classroom.user_id = data.get('user_id', classroom.user_id)
+    classroom.subject_id = data.get('subject_id', classroom.subject_id)
 
     db.session.commit()
     return jsonify({'message': 'Classroom updated successsfully'}), 200
+
 
 @classroomBp.route('/classrooms/<int:id>', methods=['DELETE'])
 def deleteClassroom(id):

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from models.role import Role
+from models.user.Role import Role
 from models import db
 
 roleBp = Blueprint('role', __name__)

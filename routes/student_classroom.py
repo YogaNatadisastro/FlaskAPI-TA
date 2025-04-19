@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify
-from models.student_classroom import StudentClassroom
+from models.classroom.StudentClassroom import StudentClassroom
+from models.classroom import Classroom
 from models import db
 import datetime
 
-studentClassroomBp = Blueprint('student_classroom', __name__)
+studentClassroomBp = Blueprint('student', __name__)
 
 @studentClassroomBp.route('/student-classroom', methods=['GET'])
 def getAllStudentClassroom():
@@ -13,10 +14,15 @@ def getAllStudentClassroom():
         result.append({
             'id': sc.id,
             'user_id': sc.user_id,
-            'classroom_id': sc.classroom_id,
+            'classroom': {
+                'id': sc.classroom.id,
+                'class_name': sc.classroom.class_name,
+                'description': sc.classroom.description
+            },
             'joined_at': str(sc.joined_at)
         })
     return jsonify(result), 200
+
 
 @studentClassroomBp.route('/student-classrooms/<int:id>', methods=['GET'])
 def getStudentClassroom(id):
@@ -28,17 +34,33 @@ def getStudentClassroom(id):
         'joined_at': str(sc.joined_at)
     }), 200
 
+
 @studentClassroomBp.route('/student-classrooms', methods=['POST'])
 def createStudentClassroom():
     data = request.get_json()
-    newSc = studentClassroomBp(
-        user_id = data.get('user_id'),
-        classroom_id = data.get('classroom_id'),
-        joined_at = data.get('joined_at', datetime.datetime.utcnow())
+    user_id = data.get('user_id')
+    # classroom_id = data.get('classroom_id')
+    enroll_key = data.get('enroll_key')
+    classroom = Classroom.query.filter_by(enroll_key=enroll_key).first()
+    if not classroom:
+        return jsonify({'error': 'Invalid enroll key'}), 400
+    
+    existing_entry = db.session.query(StudentClassroom).filter_by(
+        user_id=user_id, 
+        classroom_id=classroom.id
+        ).first()
+    if existing_entry:
+        return jsonify({'error': 'Student already enrolled in this classroom'}), 400
+    
+    newSc = StudentClassroom(
+        user_id=user_id,
+        classroom_id=classroom.id,
+        joined_at=datetime.datetime.utcnow()
     )
     db.session.add(newSc)
     db.session.commit()
-    return jsonify({'message': 'Student-Classroom relation created successfully'}), 201
+    return jsonify({'message': 'Student successfully enrolled in the classroom'}), 201
+
 
 @studentClassroomBp.route('/student-classrooms/<int:id>', methods=['PUT'])
 def updateStudentClassroom(id):
@@ -52,6 +74,7 @@ def updateStudentClassroom(id):
 
     db.session.commit()
     return jsonify({'message': 'Student-Classroom reliation updated successfully'}), 200
+
 
 @studentClassroomBp.route('/student-classrooms/<int:id>', methods=['DELETE'])
 def deleteStudentClassroom(id):
