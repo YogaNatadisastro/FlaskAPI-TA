@@ -14,8 +14,8 @@ class Config:
 
     # JWT Configuration
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-    REFRESH_TOKEN_SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY')
-    ACCESS_TOKEN_SECRET_KEY = os.getenv('ACCESS_TOKEN_SECRET_KEY')
+    REFRESH_TOKEN_SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY', 15)
+    ACCESS_TOKEN_SECRET_KEY = os.getenv('ACCESS_TOKEN_SECRET_KEY', 10080)
 
     # Access code for GURU role
     GURU_ACCESS_CODE = os.getenv('GURU_ACCESS_CODE')
@@ -27,5 +27,8 @@ class Config:
     # Token Expiry
     ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)
     REFRESH_TOKEN_EXPIRES = timedelta(days=7)
+
+    # BaseUrl
+    MODULE_BASE_URL = os.getenv('MODULE_BASE_URL')
  
     

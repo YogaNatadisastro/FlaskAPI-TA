@@ -33,7 +33,7 @@ def createSubject():
 
 @subjectBp.route('/subjects', methods=['GET'])
 def getAllSubjects():
-    if session.get('role_id') != 2:
+    if session.get('role_id') == 2:
         return jsonify({'error': 'Hanya guru yang dapat mengakses daftar subject'}), 403
     
     subjects = Subject.query.all()
