@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app, session
+from flask_jwt_extended import create_access_token, create_refresh_token
 from werkzeug.security import generate_password_hash, check_password_hash
 from utils.TokenHelper import TokenHelper
 from models.user import User
@@ -11,7 +12,7 @@ import os
 auth_bp = Blueprint('auth', __name__)
 
 # Constants
-GURU_ROLE_ID = 2
+GURU_ROLE_ID = 1
 
 # Refresh Token if expired
 @auth_bp.route('/refresh-token', methods=['POST'])
@@ -40,7 +41,7 @@ def createUser(data):
         username=data.get('username'),
         email=data.get('email'),
         password=hashedPass,
-        role_id=data.get('role_id')
+        role_id=data.get('role_id'),
     )
 
 @auth_bp.route('/signup', methods=['POST'])
@@ -108,6 +109,7 @@ def login():
             'message': 'Login successful',
             'user' : {
                 'id': user.id,
+                'uuid': user.uuid,
                 'email': user.email,
                 'username': user.username,
                 'role_id': user.role_id

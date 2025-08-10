@@ -7,7 +7,7 @@ classroomBp = Blueprint('classroom', __name__)
 
 @classroomBp.route('/classroom', methods=['GET'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(2)
+@Decorator.rolesRequired(1)
 def getAllClassrooms(current_user):
     classrooms = Classroom.query.all()
     result = []
@@ -65,7 +65,7 @@ def getClassroom(current_user, id):
 
 @classroomBp.route('/classrooms', methods=['POST'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(2)
+@Decorator.rolesRequired(1)
 def createClassroom(current_user):
     data = request.get_json()
     newClassroom = Classroom(

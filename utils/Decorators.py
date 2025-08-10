@@ -1,6 +1,7 @@
 from functools import wraps
 from flask import request, jsonify, current_app
 from models.user import User
+from utils.TokenHelper import TokenHelper
 import jwt
 
 class Decorator:
@@ -8,25 +9,24 @@ class Decorator:
     def tokenRequired(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            authHeader = request.headers.get('Authorization')
-            if not authHeader:
-                return jsonify({'message': 'Token is missing!'}), 401
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith("Bearer "):
+                return jsonify({'message': 'Token is missing or invalid format'}), 401
             
-            parts = authHeader.split()
-            if parts[0].lower() != 'bearer' or len(parts) != 2:
-                return jsonify({'message': 'Invalid token format!'}), 401
+            token_parts = auth_header.split(" ")
+            if len(token_parts) != 2:
+                return jsonify({'message': 'Token format must be Bearer <token>'}), 401
+
+            token = token_parts[1]
+            decoded, error = TokenHelper.DecodeToken(token, token_type='access')
+            if error:
+                return jsonify({'message': error}), 401
             
-            token = parts[1]
+            user = User.query.get(decoded['user_id'])
+            if not user:
+                return jsonify({'message': 'User not found'}), 404
             
-            try:
-                data = jwt.decode(token, current_app.config['ACCESS_TOKEN_SECRET_KEY'], algorithms=['HS256'])
-                current_user = User.query.get (data['user_id'])
-            except jwt.ExpiredSignatureError:
-                return jsonify({'message': 'Token has expired!'}), 401
-            except jwt.InvalidTokenError:
-                return jsonify({'message': 'Invalid token'}), 401
-            
-            return f(current_user, *args, **kwargs)
+            return f(user, *args, **kwargs)
         return decorated
 
     def rolesRequired(roleIdRequired):

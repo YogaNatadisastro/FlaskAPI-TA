@@ -12,7 +12,7 @@ class TokenHelper:
     # Generate Access Token
     @staticmethod
     def GenerateAccessToken(user_id, role_id):
-        expires_in = current_app.config.get('ACCESS_TOKEN_EXPIRES_IN', 15)
+        expires_in = current_app.config.get('ACCESS_TOKEN_EXPIRES_IN', 360)
         payload = {
             'user_id': user_id,
             'role_id': role_id,
@@ -21,6 +21,7 @@ class TokenHelper:
             'type': 'access'
     }
         secret_key = current_app.config['ACCESS_TOKEN_SECRET_KEY']
+        print("[DEBUG] Encoding Access Token with secret key:", secret_key)
         return jwt.encode(payload, secret_key, algorithm='HS256')
 
     # Generate Refresh Token
@@ -35,6 +36,7 @@ class TokenHelper:
             'type': 'refresh'
         }
         secret_key = current_app.config['REFRESH_TOKEN_SECRET_KEY']
+        print("[DEBUG] Encoding Refresh Token with secret key:", secret_key)
         return jwt.encode(payload, secret_key, algorithm='HS256')
 
     # Decode token (used to verify both access and refresh)
@@ -45,13 +47,15 @@ class TokenHelper:
             return None, 'Invalid token type'
         
         secretKey = current_app.config.get(secretKeyName)
+        print("[DEBUG] Decoding token with secret key:", secretKey)
         if not secretKey:
             return None, 'Secret key not found in config'
 
         try:
-            payload = jwt.decode(token, current_app.config['REFRESH_TOKEN_SECRET_KEY'], algorithms=['HS256'])
+            payload = jwt.decode(token, secretKey, algorithms=['HS256'])
             return payload, None
         except jwt.ExpiredSignatureError:
             return None, 'Refresh token has expired'
         except jwt.InvalidTokenError:
             return None, 'Invalid refresh token'
+    

@@ -11,6 +11,9 @@ from models.classroom.classroom import Classroom
 from models.classroom.StudentClassroom import StudentClassroom
 from models.subject.Subject import Subject
 from models.modules.Modules import Modules
+from models.exam.ExamAnswer import ExamAnswer
+from models.exam.ExamAttempt import ExamAttempt
+from models.exam.ExamQuestion import ExamQuestion
 from models.exam.Exams import Exams
-from models.exam.AnswerExams import AnswerExams
-from models.exam.QuestionExams import QuestionExams
+from models.generated.QuestionGenerated import QuestionGenerated
+from models.generated.QuestionGeneratedResult import QuestionGeneratedResult

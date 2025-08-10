@@ -1,17 +1,25 @@
 from models import db
 from datetime import datetime
+import uuid
 
 class Exams(db.Model):
     __tablename__ = 'exams'
 
     id = db.Column(db.Integer, primary_key=True)
-    tittle_exam = db.Column(db.String(100), nullable=False)
-    classroom_id = db.Column(db.Integer, db.ForeignKey('classroom.id'), nullable=False)
-    module_id = db.Column(db.Integer, db.ForeignKey('modules.id'), nullable=False)
-    is_generated = db.Column(db.Boolean, default=False)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    module_id = db.Column(db.Integer, nullable=False)
+    job_id = db.Column(db.String(200), unique=True, nullable=False)
+    level = db.Column(db.String(10), nullable=False)
+    quiz_type = db.Column(db.String(50), nullable=False)
+    classroom_id = db.Column(db.Integer, nullable=False)
+    created_by = db.Column(db.Integer, nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    duration = db.Column(db.Integer, nullable=False)  # in minutes
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    duration = db.Column(db.Integer, nullable=True)  # Duration in minutes
-    
-    classroom = db.relationship("Classroom", backref="exams")
-    module = db.relationship("Modules", backref="exams")
-    
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    questions = db.relationship('ExamQuestion', backref='exam', lazy=True)
+    attempts = db.relationship('ExamAttempt', backref='exam', lazy=True)

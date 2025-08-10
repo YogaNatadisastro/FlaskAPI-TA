@@ -8,6 +8,8 @@ from routes.student.StudentClassroom import studentClassroomBp
 from routes.SubjectRoutes import subjectBp
 from routes.upload_module.ModuleRoutes import moduleBp
 from routes.exam_route.ExamsRoutes import examBp
+from routes.generate.GenerateQuestion import questionBp
+from routes.generate.GenerateQuestionResultRoutes import questionResultBp
 
 api_bp = Blueprint('api', __name__)
 
@@ -19,3 +21,5 @@ api_bp.register_blueprint(studentClassroomBp, url_prefix='/student')
 api_bp.register_blueprint(subjectBp, url_prefix='/subject')
 api_bp.register_blueprint(moduleBp, url_prefix='/modules')
 api_bp.register_blueprint(examBp, url_prefix='/exam')
+api_bp.register_blueprint(questionBp, url_prefix='/questions')
+api_bp.register_blueprint(questionResultBp, url_prefix='/question_results')
