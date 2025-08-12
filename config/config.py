@@ -34,5 +34,20 @@ class Config:
     MODULE_BASE_URL = os.getenv('MODULE_BASE_URL')
     GLOBAL_MODULE_URL = os.getenv('GLOBAL_MODULE_URL')
     EXAM_BASE_URL = os.getenv('EXAM_BASE_URL')
- 
+
+    # QUESTION_KEY
+    QUESTION_KEY = {
+        "Q_TEXT_KEYS": [
+            "question_text", "question", "text", "content", "prompt"
+        ],
+        "OPTIONS_KEYS": [
+            "options", "choices", "option_json", "choices_json", "choices_list"
+        ],
+        "ANSWERS_KEYS": [
+            "answer", "correct_answer", "key", "answer_key", "correct"
+        ],
+        "QID_KEYS": [
+            "question_id", "qid", "id_question", "id"
+        ]
+    }
     

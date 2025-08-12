@@ -13,6 +13,7 @@ class GenerateQuestionResultService:
 
         return {
             "job_id": result.job_id,
+            "question_id": result.question_id,
             "module_id": result.module_id,
             "level": result.level,
             "quiz_type": result.quiz_type,

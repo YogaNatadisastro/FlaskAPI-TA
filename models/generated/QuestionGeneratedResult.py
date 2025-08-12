@@ -13,16 +13,10 @@ class QuestionGeneratedResult(db.Model):
     quiz_type = db.Column(db.String(50), nullable=False)
 
     status = db.Column(db.String(50), nullable=False, default='pending')
-    result_message = db.Column(db.Text, nullable=False)
-    insert_message = db.Column(db.Text, nullable=False)
     inserted_questions = db.Column(db.JSON, nullable=False)
 
     quiz_details = db.Column(db.JSON, nullable=False)
     questions = db.Column(db.JSON, nullable=False)
-
-    enqueued_at = db.Column(db.DateTime, default=datetime.utcnow)
-    started_at = db.Column(db.DateTime, nullable=True)
-    completed_at = db.Column(db.DateTime, nullable=True)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

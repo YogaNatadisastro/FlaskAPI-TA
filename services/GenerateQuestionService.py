@@ -17,8 +17,6 @@ class GenerateQuestionService:
         response.raise_for_status()
         job_id = response.json().get('job_id')
 
-        # current_user_id = get_jwt_identity()
-
         # Simpan Data ke Database
         newGeneratedQuestion = QuestionGenerated(
             job_id = job_id,
@@ -59,36 +57,70 @@ class GenerateQuestionService:
         # IF status is completed and result is already present
         if data.get("status") == "finished" and data.get("result"):
             result_data = data["result"]
-            # Ambil questions direct from result_data
-            questions_from_result = (
-                result_data.get("quiz_details") or 
-                data.get("questions") or
-                []
-            )
             
-            inserted_questions_data = result_data.get("inserted_questions", [])
+            # Get questions from result
+            quiz_details_data = result_data.get("quiz_details", [])
+            questions_data = data.get("questions", [])
 
-            
+            # Get inserted_questions
+            inserted_questions_data = result_data.get("data", {}).get("inserted_questions", [])
+
+            # Flatten if nested list
+            if isinstance(inserted_questions_data, list):
+                if len(inserted_questions_data) == 1 and isinstance(inserted_questions_data[0], list):
+                    inserted_questions_data = inserted_questions_data[0]
+
+            # get question_id from inserted_questions
+            question_id_value = 0
+            if inserted_questions_data and isinstance(inserted_questions_data, list) and len(inserted_questions_data) > 0:
+                first_item = inserted_questions_data[0]
+                if isinstance(first_item, dict):
+                    question_id_value = first_item.get("question_id")
+                    
+            inserted_message_value = result_data.get("message", "")
 
             result_model = QuestionGeneratedResult(
                 job_id=job_id,
                 module_id=generate.module_id,
-                question_id=generate.id,
+                question_id=question_id_value,
                 level=generate.level,
                 quiz_type=generate.quiz_type,
                 status=result_data.get('status', 'pending'),
                 result_message=result_data.get('result_message', ''),
-                insert_message=result_data.get('insert_message', ''),
+                insert_message=inserted_message_value,
                 inserted_questions=inserted_questions_data,
-                quiz_details=result_data.get('quiz_details', {}),
-                questions=questions_from_result,
+                quiz_details=quiz_details_data,
+                questions=questions_data,
                 started_at=datetime.utcnow(),
                 completed_at=datetime.utcnow()
             )
 
             db.session.add(result_model)
             db.session.flush()
+
+            #If API can't provide question_id
+            if not question_id_value:
+                result_model.question_id = result_model.id
+                current_app.logger.info(
+                    f"[UpdateStatus] job_id: {job_id} question_id created in local: {result_model.question_id}"
+                )
+
             generate.result_id = result_model.id
-        
+            saved_result = result_model
+
         db.session.commit()
+
+        if saved_result:
+            return {
+                "job_id": saved_result.job_id,
+                "module_id": saved_result.module_id,
+                "level": saved_result.level,
+                "quiz_type": saved_result.quiz_type,
+                "question_id": saved_result.question_id,
+                "inserted_questions": saved_result.inserted_questions,
+                "quiz_details": saved_result.quiz_details,
+                "questions": saved_result.questions,
+                "status": saved_result.status
+            }
+        
         return data
