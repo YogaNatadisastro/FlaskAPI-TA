@@ -9,8 +9,6 @@ class Exams(db.Model):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
     module_id = db.Column(db.Integer, nullable=False)
-    job_id = db.Column(db.String(200), unique=True, nullable=False)
-    level = db.Column(db.String(10), nullable=False)
     quiz_type = db.Column(db.String(50), nullable=False)
     classroom_id = db.Column(db.Integer, nullable=False)
     created_by = db.Column(db.Integer, nullable=False)
@@ -21,5 +19,5 @@ class Exams(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    questions = db.relationship('ExamQuestion', backref='exam', lazy=True)
-    attempts = db.relationship('ExamAttempt', backref='exam', lazy=True)
+    questions = db.relationship('ExamQuestion', back_populates='exam', lazy=True)
+    attempts = db.relationship('ExamAttempt', back_populates='exam', lazy=True)

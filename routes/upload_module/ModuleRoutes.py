@@ -12,7 +12,7 @@ apiService = ModuleRoutes()
 
 @moduleBp.route('/upload', methods=['POST'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(roleIdRequired=2)  # Assuming roleId 2 is for 'Guru'
+@Decorator.rolesRequired(roleIdRequired=1)  # Assuming roleId 1 is for 'Guru'
 def uploadModule(current_user):
     data = request.form
     files = request.files

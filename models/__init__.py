@@ -16,4 +16,3 @@ from models.exam.ExamAttempt import ExamAttempt
 from models.exam.ExamQuestion import ExamQuestion
 from models.exam.Exams import Exams
 from models.generated.QuestionGenerated import QuestionGenerated
-from models.generated.QuestionGeneratedResult import QuestionGeneratedResult

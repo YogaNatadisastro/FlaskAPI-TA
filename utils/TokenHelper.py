@@ -12,7 +12,7 @@ class TokenHelper:
     # Generate Access Token
     @staticmethod
     def GenerateAccessToken(user_id, role_id):
-        expires_in = current_app.config.get('ACCESS_TOKEN_EXPIRES_IN', 360)
+        expires_in = int(current_app.config.get('ACCESS_TOKEN_EXPIRES_MINUTES', 360))
         payload = {
             'user_id': user_id,
             'role_id': role_id,
@@ -27,11 +27,11 @@ class TokenHelper:
     # Generate Refresh Token
     @staticmethod
     def GenerateRefreshToken(user_id, role_id):
-        expires_in = current_app.config.get('REFRESH_TOKEN_EXPIRES_IN', 7)
+        expires_in = int(current_app.config.get('REFRESH_TOKEN_EXPIRES_MINUTES', 60 * 24 *7))
         payload = {
             'user_id': user_id,
             'role_id': role_id,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=expires_in),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=expires_in),
             'iat': datetime.datetime.utcnow(),
             'type': 'refresh'
         }

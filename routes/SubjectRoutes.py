@@ -4,11 +4,10 @@ from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from models import db, Subject, User
 
-
 subjectBp = Blueprint('subject', __name__)
 
 def isTeacher(user):
-    return user.role_id == 2
+    return user.role_id == 1
 
 @subjectBp.route('/subjects', methods=['POST'])
 @jwt_required()
@@ -32,8 +31,9 @@ def createSubject():
     }), 201
 
 @subjectBp.route('/subjects', methods=['GET'])
+@jwt_required()
 def getAllSubjects():
-    if session.get('role_id') == 2:
+    if session.get('role_id') == 1:
         return jsonify({'error': 'Hanya guru yang dapat mengakses daftar subject'}), 403
     
     subjects = Subject.query.all()

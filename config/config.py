@@ -18,7 +18,6 @@ class Config:
     ACCESS_TOKEN_SECRET_KEY = os.getenv('ACCESS_TOKEN_SECRET_KEY')
     REFRESH_TOKEN_SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY')
     
-
     # Access code for GURU role
     GURU_ACCESS_CODE = os.getenv('GURU_ACCESS_CODE')
 

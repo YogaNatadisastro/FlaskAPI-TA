@@ -9,8 +9,9 @@ class ExamAttempt(db.Model):
 
     exam_id = db.Column(db.Integer, db.ForeignKey('exams.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    started_at = db.Column(db.DateTime, default=datetime.utcnow)
-    completed_at = db.Column(db.DateTime, nullable=True)
+    answers = db.Column(db.JSON, nullable=True)
     score = db.Column(db.Float, nullable=True)
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    answers = db.relationship('ExamAnswer', backref='attempt', lazy=True)
+    exam_answers = db.relationship('ExamAnswer', backref='attempt', lazy=True)
+    exam = db.relationship('Exams', back_populates='attempts')

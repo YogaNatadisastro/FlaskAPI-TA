@@ -15,6 +15,7 @@ def create_app():
 
     print("ACCESS_TOKEN_SECRET_KEY:", app.config['ACCESS_TOKEN_SECRET_KEY'])
     print("REFRESH_TOKEN_SECRET_KEY:", app.config['REFRESH_TOKEN_SECRET_KEY'])
+    print("JWT_SECRET_KEY:", app.config["JWT_SECRET_KEY"])
 
     jwt = JWTManager(app)
     CORS(app)

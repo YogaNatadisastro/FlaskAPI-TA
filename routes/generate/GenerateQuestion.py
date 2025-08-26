@@ -25,3 +25,13 @@ def getQuestionStatus(current_user, job_id):
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@questionBp.route('/generate_question/detail/<string:job_id>', methods=['GET'])
+@Decorator.tokenRequired
+@Decorator.rolesRequired(1)
+def getGeneratedQuestions(current_user, job_id):
+    try:
+        result = generator_service.getGenaratedQuestions(job_id)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

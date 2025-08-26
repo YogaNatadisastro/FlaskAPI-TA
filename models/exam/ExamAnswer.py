@@ -10,3 +10,10 @@ class ExamAnswer(db.Model):
     question_id = db.Column(db.Integer, db.ForeignKey('exam_questions.id'), nullable=False)
     selected_answer = db.Column(db.String(255), nullable=False)
     is_correct = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('attempt_id', 'question_id', name='uq_attempt_question'),
+    )
+
+    
