@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, session
 from models.subject import Subject
-from flask_jwt_extended import get_jwt_identity
-from flask_jwt_extended import jwt_required
+from utils.Decorators import Decorator
 from models import db, Subject, User
 
 subjectBp = Blueprint('subject', __name__)
@@ -10,11 +9,10 @@ def isTeacher(user):
     return user.role_id == 1
 
 @subjectBp.route('/subjects', methods=['POST'])
-@jwt_required()
-def createSubject():
-    currentUserId = get_jwt_identity()
-    user = User.query.get(currentUserId)
-    
+@Decorator.tokenRequired
+@Decorator.rolesRequired(1)
+def createSubject(current_user):
+    user = User.query.get(current_user.id)
     if not isTeacher(user):
         return jsonify({'error': 'You are not authorized to create a subject'}), 403
     
@@ -31,9 +29,10 @@ def createSubject():
     }), 201
 
 @subjectBp.route('/subjects', methods=['GET'])
-@jwt_required()
-def getAllSubjects():
-    if session.get('role_id') == 1:
+@Decorator.tokenRequired
+@Decorator.rolesRequired(1)
+def getAllSubjects(current_user):
+    if current_user.role_id != 1:
         return jsonify({'error': 'Hanya guru yang dapat mengakses daftar subject'}), 403
     
     subjects = Subject.query.all()

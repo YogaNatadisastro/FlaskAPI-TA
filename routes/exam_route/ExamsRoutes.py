@@ -12,3 +12,23 @@ def createExam(current_user):
     data = request.get_json()
     response, status = exam_service.createExam(data, current_user.id)
     return jsonify(response), status
+
+@examBp.route('/<int:exam_id>', methods=['GET'])
+@Decorator.tokenRequired
+@Decorator.rolesRequired(1)
+def getExamDetail(current_user, exam_id):
+    response, status = exam_service.getExamDetail(exam_id)
+    return jsonify(response), status
+
+
+@examBp.route('/all', methods=['GET'])
+@Decorator.tokenRequired
+@Decorator.rolesRequired(1)
+def getAllExams(current_user):
+    try:
+        classroom_id = request.args.get("classroom_id", type=int)
+        user_id = current_user.id
+        response, status = exam_service.getAllExam(classroom_id=classroom_id, user_id=user_id)
+        return jsonify(response), status
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

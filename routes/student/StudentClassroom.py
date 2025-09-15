@@ -9,7 +9,7 @@ studentClassroomBp = Blueprint('student', __name__)
 
 @studentClassroomBp.route('/student-classroom', methods=['GET'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(1)
+@Decorator.rolesRequired(2)
 def getAllStudentClassroom(current_user):
     sc_list = StudentClassroom.query.all()
     result = []
@@ -41,7 +41,7 @@ def getAllStudentClassroom(current_user):
 # Not usefull
 @studentClassroomBp.route('/student-classrooms/<int:user_id>/<int:classroom_id>', methods=['GET'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(1)
+@Decorator.rolesRequired(2)
 def getStudentClassroom(current_user, user_id, classroom_id):
     sc = StudentClassroom.query.filter_by(user_id=user_id, classroom_id=classroom_id).first_or_404()
     return jsonify({
@@ -57,7 +57,7 @@ def getStudentClassroom(current_user, user_id, classroom_id):
 
 @studentClassroomBp.route('/student-classrooms', methods=['POST'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(1)
+@Decorator.rolesRequired(2)
 def createStudentClassroom(current_user):
     data = request.get_json()
     enroll_key = data.get('enroll_key')
@@ -84,7 +84,7 @@ def createStudentClassroom(current_user):
 # Not usefull
 @studentClassroomBp.route('/student-classrooms/<int:id>', methods=['PUT'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(1)
+@Decorator.rolesRequired(2)
 def updateStudentClassroom(current_user, id):
     data = request.get_json()
     sc = StudentClassroom.query.get_or_404(id)
@@ -100,7 +100,7 @@ def updateStudentClassroom(current_user, id):
 
 @studentClassroomBp.route('/student-classrooms/<int:id>', methods=['DELETE'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(1)
+@Decorator.rolesRequired(2)
 def deleteStudentClassroom(current_user, id):
     sc = StudentClassroom.query.get_or_404(id)
     db.session.delete(sc)

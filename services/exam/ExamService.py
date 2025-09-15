@@ -62,6 +62,10 @@ class ExamService:
             return {
                 "message": "Exam created successfully",
                 "exam_id": exam.id,
+                "exam_title": exam.title,
+                "exam_description": exam.description,
+                "duration": exam.duration,
+                "quiz_type": exam.quiz_type,
                 "num_questions": len(selectedQuestions)
             }, 201
         
@@ -78,14 +82,18 @@ class ExamService:
         if not exam:
             return {"error": "Exam not found"}, 404
         
-        questions = [
-            {
+        questions = []
+        for q in exam.questions:
+            metadata = q.question_metadata or {}
+            data = q.question_data or {}
+            questions.append({
                 "id": q.id,
-                "metadata": q.question_metadata,
-                "data": q.question_data
-            }
-            for q in exam.questions
-        ]
+                "job_id": metadata.get("job_id"),
+                "module_id": metadata.get("module_id"),
+                "resource_name": metadata.get("resource_name"),
+                "question_id": data.get("question_id"),
+                "question": data.get("question")
+            })
 
         return {
             "exam": {
@@ -98,3 +106,35 @@ class ExamService:
                 "questions": questions
             }
         }, 200
+    
+    @staticmethod
+    def getAllExam(classroom_id=None, user_id=None):
+        try:
+            query = Exams.query
+            if classroom_id:
+                query = query.filter_by(classroom_id=classroom_id)
+            if user_id:
+                query = query.filter_by(created_by=user_id)
+
+            exams = query.all()
+            result = []
+            for exam in exams:
+                result.append({
+                    "id": exam.id,
+                    "title": exam.title,
+                    "description": exam.description,
+                    "quiz_type": exam.quiz_type,
+                    "module_id": exam.module_id,
+                    "created_by": exam.created_by,
+                    "classroom_id": exam.classroom_id,
+                    "start_time": exam.start_time.isoformat() if exam.start_time else None,
+                    "end_time": exam.end_time.isoformat() if exam.end_time else None,
+                    "duration": exam.duration,
+                    "created_at": exam.created_at.isoformat() if exam.created_at else None,
+                    "updated_at": exam.updated_at.isoformat() if exam.updated_at else None,
+                    "num_questions": len(exam.questions)
+                })
+            
+            return result, 200
+        except Exception as e:
+            return {"error" : str(e)}, 500

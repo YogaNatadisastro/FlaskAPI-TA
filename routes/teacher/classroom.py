@@ -1,88 +1,44 @@
 from flask import Blueprint, request, jsonify
 from utils.Decorators import Decorator
 from models.classroom.classroom import Classroom
+from services.ClassroomService import ClassroomService
 from models import db
 
 classroomBp = Blueprint('classroom', __name__)
+classroomService = ClassroomService()
 
 @classroomBp.route('/classroom', methods=['GET'])
 @Decorator.tokenRequired
 @Decorator.rolesRequired(1)
 def getAllClassrooms(current_user):
-    classrooms = Classroom.query.all()
-    result = []
-    for c in classrooms:
-        result.append({
-            'id': c.id,
-            'class_name': c.class_name,
-            'description': c.description,
-            'enroll_key': c.enroll_key,
-            'user': {
-                'id': c.user.id,
-                'username': c.user.username,
-                'email': c.user.email
-            } if c.user else None,
-            'subject': {
-                'id': c.subject.id,
-                'name': c.subject.subject_name,
-            } if c.subject else None
-        })
-
-        userInfo = {
-            "id": current_user.id,
-            "username": current_user.username,
-            "email": current_user.email,
-            "role_id": current_user.role_id
-        }
-
-    return jsonify({
-        "user": userInfo,
-        "classrooms": result
-    }), 200
+    try:
+        return classroomService.getAllClassrooms(current_user)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @classroomBp.route('/classrooms/<int:id>', methods=['GET'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(2)
+@Decorator.rolesRequired(1)
 def getClassroom(current_user, id): 
-    classroom = Classroom.query.get_or_404(id)
-    return jsonify({
-        'id': classroom.id,
-        'class_name': classroom.class_name,
-        'description': classroom.description,
-        'enroll_key': classroom.enroll_key,
-        'user': {
-                'id': classroom.user.id,
-                'username': classroom.user.username,
-                'email': classroom.user.email
-            } if classroom.user else None,
-            'subject': {
-                'id': classroom.subject.id,
-                'name': classroom.subject.subject_name,
-            } if classroom.subject else None
-        }), 200
+    try:
+        return classroomService.getClassroomById(current_user, id)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @classroomBp.route('/classrooms', methods=['POST'])
 @Decorator.tokenRequired
 @Decorator.rolesRequired(1)
 def createClassroom(current_user):
-    data = request.get_json()
-    newClassroom = Classroom(
-        class_name=data.get('class_name'),
-        description=data.get('description'),
-        enroll_key=data.get('enroll_key'),
-        user_id=current_user.id,
-        subject_id=data.get('subject_id') 
-    )
-    db.session.add(newClassroom)
-    db.session.commit()
-    return jsonify({'message': 'Classroom created successfully'}), 201
-
+    try:
+        return classroomService.createClassroom(current_user)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @classroomBp.route('/classrooms/<int:id>', methods=['PUT'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(2)
+@Decorator.rolesRequired(1)
 def updateClassroom(current_user,id):
     data = request.get_json()
     classroom = Classroom.query.get_or_404(id) 
@@ -99,7 +55,7 @@ def updateClassroom(current_user,id):
 
 @classroomBp.route('/classrooms/<int:id>', methods=['DELETE'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(2)
+@Decorator.rolesRequired(1)
 def deleteClassroom(current_user, id):
     classroom = Classroom.query.get_or_404(id)
     db.session.delete(classroom)
