@@ -15,9 +15,8 @@ def createExam(current_user):
 
 @examBp.route('/<int:exam_id>', methods=['GET'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(1)
 def getExamDetail(current_user, exam_id):
-    response, status = exam_service.getExamDetail(exam_id)
+    response, status = exam_service.getExamDetail(exam_id, current_user)
     return jsonify(response), status
 
 

@@ -14,8 +14,11 @@ class QuestionGenerated(db.Model):
     context = db.Column(db.Text, nullable=True)
     response_payload = db.Column(db.JSON, nullable=True)
     status = db.Column(db.String(50), nullable=False, default='pending')
+
+    exam_questions = db.relationship("ExamQuestion", back_populates="generated", lazy=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    update_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f"<QuestionGenerated id={self.id} resource_name={self.resource_name} quiz_type={self.quiz_type} level={self.level} num_questions={self.num_questions} context={self.context}>"
