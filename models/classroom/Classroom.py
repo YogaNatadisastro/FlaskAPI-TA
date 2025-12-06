@@ -1,4 +1,5 @@
 from models import db
+from datetime import datetime
 
 class Classroom(db.Model):
     __tablename__ = 'classroom'
@@ -8,8 +9,10 @@ class Classroom(db.Model):
     enroll_key = db.Column(db.String(100), nullable=False, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
+    exams = db.relationship('Exams', back_populates='classroom', lazy=True)
     user = db.relationship('User', backref='classrooms')
     subject = db.relationship('Subject', backref='classrooms_list')
 

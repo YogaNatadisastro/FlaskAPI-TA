@@ -9,6 +9,7 @@ class ExamQuestion(db.Model):
     exam_id = db.Column(db.Integer, db.ForeignKey('exams.id'), nullable=True, index=True)
     generated_id = db.Column(db.Integer, db.ForeignKey('question_generated.id'), nullable=True, index=True)
     module_id = db.Column(db.Integer, nullable=True, index=True)
+    classroom_id = db.Column(db.Integer, nullable=True, index=True)
 
     question_metadata = db.Column(db.JSON, nullable=True)
     question_data = db.Column(db.JSON, nullable=True)

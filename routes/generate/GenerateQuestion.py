@@ -41,7 +41,22 @@ def getGeneratedQuestions(current_user, job_id):
 @Decorator.rolesRequired(1)
 def getAllQuestions(current_user):
     try:
-        result = generator_service.getAllQuestions()
+        classroom_id = request.args.get("classroom_id", type=int)
+        result = generator_service.getAllQuestions(classroom_id=classroom_id)
         return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@questionBp.route('/delete', methods=['DELETE'])
+@Decorator.tokenRequired
+@Decorator.rolesRequired(1)
+def deleteQuestion(current_user):
+    question_id = request.args.get("question_id", type=int)
+    if not question_id:
+        return jsonify({"error": "Pilih salah satu pertanyaan"}), 400
+    try:
+        result = generator_service.deleteQuestion(question_id=question_id)
+        status_code = 200 if result.get("deleted") else 404
+        return jsonify(result), status_code
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -5,14 +5,26 @@ from models import db
 class ClassroomService:
 
     def getAllClassrooms(self, current_user):
-        classrooms = Classroom.query.all()
+        classrooms = Classroom.query \
+            .filter_by(user_id = current_user.id) \
+            .order_by(Classroom.created_at.desc()).all()
+        
         result = []
+
+        userInfo = {
+                "id": current_user.id,
+                "username": current_user.username,
+                "email": current_user.email,
+                "role_id": current_user.role_id 
+            }
+
         for c in classrooms:
             result.append({
                 'id': c.id,
                 'class_name': c.class_name,
                 'description': c.description,
                 'enroll_key': c.enroll_key,
+                'created_at': c.created_at.isoformat() if c.created_at else None,
                 'user': {
                     'id': c.user.id,
                     'username': c.user.username,
@@ -23,13 +35,6 @@ class ClassroomService:
                     'name': c.subject.subject_name,
                 } if c.subject else None
             })
-
-            userInfo = {
-                "id": current_user.id,
-                "username": current_user.username,
-                "email": current_user.email,
-                "role_id": current_user.role_id 
-            }
         
         return jsonify({
             "user": userInfo,

@@ -1,10 +1,38 @@
 from flask import Blueprint, request, jsonify
 from models.user import User
-from models import db
-from werkzeug.security import generate_password_hash
+from services.UserService import UserService
+from utils.Decorators import Decorator
 
 userBp = Blueprint('user', __name__)
+userService = UserService()
 
+
+@userBp.route('update/username', methods=['PUT'])
+@Decorator.tokenRequired
+def updateUsername(current_user):
+    data = request.get_json()
+    new_username = data.get('username')
+    
+    return userService.updateUsername(
+        user_id=current_user.id,
+        new_username=new_username
+    )
+
+@userBp.route('update/password', methods=['PUT'])
+@Decorator.tokenRequired
+def updatePassword(current_user):
+    data = request.get_json()
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+
+    return UserService.updatePassword(
+        user_id=current_user.id,
+        old_password=old_password,
+        new_password=new_password
+    )
+
+##Not used for now 
+##
 @userBp.route('/users', methods=['GET'])
 def getAllUsers():
     users = User.query.all()
@@ -40,3 +68,4 @@ def getUserById(id):
             'name_role': user.role.name_role
         } if user.role else None
     }), 200
+

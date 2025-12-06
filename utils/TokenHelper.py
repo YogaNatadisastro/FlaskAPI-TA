@@ -1,6 +1,7 @@
 import jwt
 import datetime
 from flask import current_app
+from werkzeug.security import generate_password_hash, check_password_hash
 
 class TokenHelper:
 
@@ -58,4 +59,8 @@ class TokenHelper:
             return None, 'Refresh token has expired'
         except jwt.InvalidTokenError:
             return None, 'Invalid refresh token'
+        
+    @staticmethod
+    def HashPassword(password: str) -> str:
+        return generate_password_hash(password)
     

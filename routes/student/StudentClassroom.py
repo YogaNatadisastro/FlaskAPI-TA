@@ -11,7 +11,13 @@ studentClassroomBp = Blueprint('student', __name__)
 @Decorator.tokenRequired
 @Decorator.rolesRequired(2)
 def getAllStudentClassroom(current_user):
-    sc_list = StudentClassroom.query.all()
+    sc_list = (
+        StudentClassroom.query
+        .filter_by(user_id = current_user.id)
+        .order_by(StudentClassroom.joined_at.desc())
+        .all()
+    )
+
     result = []
     for sc in sc_list:
         result.append({

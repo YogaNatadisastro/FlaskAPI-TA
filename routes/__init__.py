@@ -9,6 +9,7 @@ from routes.SubjectRoutes import subjectBp
 from routes.upload_module.ModuleRoutes import moduleBp
 from routes.exam_route.ExamsRoutes import examBp
 from routes.generate.GenerateQuestion import questionBp
+from routes.token.TokenRoutes import tokenBp
 
 api_bp = Blueprint('api', __name__)
 
@@ -21,3 +22,4 @@ api_bp.register_blueprint(subjectBp, url_prefix='/subject')
 api_bp.register_blueprint(moduleBp, url_prefix='/modules')
 api_bp.register_blueprint(examBp, url_prefix='/exams')
 api_bp.register_blueprint(questionBp, url_prefix='/questions')
+api_bp.register_blueprint(tokenBp, url_prefix='/token')

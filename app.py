@@ -6,6 +6,7 @@ from flask_jwt_extended import JWTManager
 from models import db
 from routes import api_bp
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
 
@@ -16,6 +17,7 @@ def create_app():
     print("ACCESS_TOKEN_SECRET_KEY:", app.config['ACCESS_TOKEN_SECRET_KEY'])
     print("REFRESH_TOKEN_SECRET_KEY:", app.config['REFRESH_TOKEN_SECRET_KEY'])
     print("JWT_SECRET_KEY:", app.config["JWT_SECRET_KEY"])
+    print(os.getenv('EXAM_BASE_URL'))
 
     jwt = JWTManager(app)
     CORS(app)

@@ -29,12 +29,12 @@ class Decorator:
             return f(user, *args, **kwargs)
         return decorated
 
-    def rolesRequired(roleIdRequired):
+    def rolesRequired(*roleIdRequired):
         def wrapper(f):
             @wraps(f)
             def decorated(current_user ,*args, **kwargs):
                 role_id = current_user.role_id
-                if role_id != roleIdRequired:
+                if role_id not in roleIdRequired:
                     return jsonify({'message': 'Access denied!'}), 403
                 return f(current_user ,*args, **kwargs)
             return decorated

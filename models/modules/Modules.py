@@ -1,14 +1,26 @@
 from models import db
+from datetime import datetime
 
 class Modules(db.Model):
     __tablename__ = 'modules'
 
     id = db.Column(db.Integer, primary_key=True)
-    classroom_id = db.Column(db.Integer, db.ForeignKey('classroom.id'), nullable=False)
-    resource_id = db.Column(db.Integer, nullable=False)
-    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    module_name = db.Column(db.String(50), nullable=False)
+    resource_name = db.Column(db.String(150), nullable=False)
+    job_id = db.Column(db.String(100), nullable=True)
 
-    classroom = db.relationship('Classroom', backref='modules', lazy=True)
+    classroom_id = db.Column(
+        db.Integer,
+        db.ForeignKey('classroom.id'),
+        nullable=False
+    )
 
-    def __repr__(self):
-        return f"<ClassroomModule classroom_id={self.classroom_id}, resource_id={self.resource_id}>"
+    uploaded_by = db.Column(
+        db.Integer,
+        db.ForeignKey('users.id'),
+        nullable=False
+    )
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    uploader = db.relationship('User', backref='uploaded_modules')
+    classroom = db.relationship('Classroom', backref='modules')

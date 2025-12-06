@@ -1,33 +1,40 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 from models import db 
 import requests 
-from services.ExternalApiService import ModuleRoutes
+from services.ExternalApiService import ExternalService
 from models.classroom.classroom import Classroom
 from models.modules.Modules import Modules
 from models.ClassModuleMap import isValidClass
 from utils.Decorators import Decorator
 
 moduleBp = Blueprint('modules', __name__)
-apiService = ModuleRoutes()
+apiService = ExternalService()
 
 @moduleBp.route('/upload', methods=['POST'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(roleIdRequired=1)  # Assuming roleId 1 is for 'Guru'
+@Decorator.rolesRequired(1)# Assuming roleId 1 is for 'Guru'
 def uploadModule(current_user):
-    data = request.form
-    files = request.files
-    try: 
-        result = apiService.uploadModule(data, files)
-        return jsonify(result), 200
+    try:
+       result = apiService.uploadModule(
+           current_user=current_user,
+           data=request.form,
+           files=request.files
+       )
+       return jsonify(result), 200
+    
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": "Failed to upload module", "details": str(e)}), 500
+    
+    except Exception as e:
+        return jsonify({
+            "error": "Gagal mengupload module",
+            "details": str(e)
+        }), 500
     
 
 @moduleBp.route('/<int:classroom_id>/add_module', methods=['POST'])
 @Decorator.tokenRequired
-@Decorator.rolesRequired(roleIdRequired=1)
+@Decorator.rolesRequired(1)
 def addModuleToClassroom(current_user, classroom_id):
     classroom = Classroom.query.get(classroom_id)
     if not classroom:
@@ -51,21 +58,14 @@ def addModuleToClassroom(current_user, classroom_id):
     return jsonify({"message": "Module berhasil ditambahkan ke kelas"}), 201
 
 
-@moduleBp.route('/<int:classroom_id>/modules', methods=['GET'])
+@moduleBp.route('/<int:classroom_id>', methods=['GET'])
 @Decorator.tokenRequired
 def getModulesByClassroom(current_user, classroom_id):
-    classroom = Classroom.query.get(classroom_id)
-    if not classroom:
-        return jsonify({"error": "Kelas tidak ditemukan"}), 404
-    
-    mappings = Modules.query.filter_by(classroom_id=classroom_id).all()
-    resourceIds = [m.resource_id for m in mappings]
-
-    try:
-        result = apiService.getFilteredModules(classroom, resourceIds)
-        return jsonify(result), 200
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": "Gagal mengambil modul", "details": str(e)}), 500
+    result, error, status = apiService.getModuleByClassroomId(classroom_id)
+    if error:
+        return jsonify(error), status
+    else:
+        return jsonify(result), status
   
     
 @moduleBp.route('list-modules', methods=['GET'])
@@ -76,3 +76,29 @@ def getAllModules(current_user):
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"error": "Gagal mengambil modul", "details": str(e)}), 500
+    
+
+@moduleBp.route('resource/download/<string:resource_name>', methods=['GET'])
+@Decorator.tokenRequired
+def downloadModules(current_user, resource_name=None):
+    try:
+        externalResponse = apiService.downloadModule(resource_name)
+        content_type = externalResponse.headers.get('Content-Type', 'application/octet-stream')
+        contentDisposition = externalResponse.headers.get(
+            'Content-Disposition', f'inline; filename="{resource_name}.pdf"'
+        )
+        
+        return Response(
+            externalResponse.iter_content(chunk_size=8192),
+            status=externalResponse.status_code,
+            content_type=content_type,
+            headers={
+                "Content-Disposition": contentDisposition
+            }
+        )
+    
+    except Exception as e:
+        return jsonify({
+            "error": "Gagal mengunduh resource",
+            "details": str(e)
+        }), 500

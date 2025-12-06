@@ -32,7 +32,7 @@ class Config:
     # BaseUrl
     MODULE_BASE_URL = os.getenv('MODULE_BASE_URL')
     GLOBAL_MODULE_URL = os.getenv('GLOBAL_MODULE_URL')
-    EXAM_BASE_URL = os.getenv('EXAM_BASE_URL')
+    EXAM_BASE_URL = os.getenv('EXAM_BASE_URL', '').rstrip('/')
 
     # QUESTION_KEY
     QUESTION_KEY = {

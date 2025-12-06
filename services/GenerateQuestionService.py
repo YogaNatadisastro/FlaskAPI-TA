@@ -1,10 +1,11 @@
 import requests, json
 from flask import current_app
-from sqlalchemy import cast, String
+from sqlalchemy import cast, String, Integer
 from datetime import datetime
 from models import db
 from models.generated.QuestionGenerated import QuestionGenerated
 from models.exam.ExamQuestion import ExamQuestion
+from models.modules.Modules import Modules
 from utils.MergeQuestion import MergeQuestion
 from config.config import Config
 from flask_jwt_extended import get_jwt_identity
@@ -14,24 +15,86 @@ class GenerateQuestionService:
     def __init__(self):
         self.base_url = Config.GLOBAL_MODULE_URL
 
+    def safeJsonLoads(self, s: Any):
+        if s is None:
+            return {}
+        if isinstance(s, (dict, list)):
+            return s
+        if isinstance(s, str):
+            try:
+                return json.loads(s)
+            except Exception:
+                return {}
+        return {}
+
     def generateQuestions(self, request_data: Dict[str, Any]) -> Optional[str]:
+        module_id = request_data.get("module_id")
+        if not module_id:
+            raise ValueError("module_id is required")
+        
+        classroom_id = request_data.get("classroom_id")
+        if not classroom_id:
+            raise ValueError("classroom_id is required")
+        
+        module = Modules.query.filter_by(id=module_id).first()
+        if not module:
+            current_app.logger.error(f"[GenerateQuestions] Module id not found: {module_id}")
+            raise ValueError("Module not found")
+        
+        resource_name = (module.resource_name or "").strip()
+        if not resource_name:
+            current_app.logger.error(f"[GenerateQuestions] Module id not found: {module_id}")
+            raise ValueError("Module has no resource_name")
+
+        try:
+            num_questions = int(request_data.get("num_questions", 0))
+        except Exception:
+            raise ValueError("num_questions must be an integer")
+        
+        if num_questions <= 0:
+            raise ValueError("num_questions must be greater than 0")
+            
+        external_payload = {
+            "quiz_type": request_data.get("quiz_type"),
+            "resource_name": resource_name,
+            "level": request_data.get("level"),
+            "num_questions": num_questions,
+            "context": request_data.get("context")
+        }
+
         url = f"{self.base_url}/generate_question"
-        response = requests.post(url, json=request_data)
-        response.raise_for_status()
-        payload = response.json()
+        try:
+            response = requests.post(url, json=external_payload)
+            response.raise_for_status()
+        except requests.exceptions.Timeout:
+            current_app.logger.error("[GenerateQuestions] External request timeout")
+            raise ValueError("External question generator timeout")
+        except Exception as e:
+            current_app.logger.error(f"[GenerateQuestions] Error contacting external service: {e}")
+            raise ValueError("Failed to contact external generator")
+        
+        try:
+            payload = response.json()
+        except Exception:
+            current_app.logger.error(f"[GenerateQuestions] Invalid JSON from external: {response.text}")
+            raise ValueError("Invalid response from external generator")
         job_id = payload.get("job_id")
+        if not job_id:
+            current_app.logger.error(f"[GenerateQuestions] No job_id returned from external: {payload}")
+            raise ValueError("External service did not return job_id")
         status = payload.get("status", "pending")
 
         # Simpan Record ke QuestionGenerated
         try:
             newGeneratedQuestion = QuestionGenerated(
                 job_id = job_id,
-                module_id = request_data['module_id'],
-                resource_name = request_data['resource_name'],
-                quiz_type = request_data['quiz_type'],
-                level = request_data['level'],
-                num_questions = request_data['num_questions'],
-                context = request_data.get('context'),
+                module_id = module.id,
+                classroom_id = classroom_id,
+                resource_name = resource_name,
+                quiz_type = external_payload.get('quiz_type'),
+                level = external_payload.get('level'),
+                num_questions = num_questions,
+                context = external_payload.get('context'),
                 status = status,
                 response_payload = json.dumps(payload, ensure_ascii=False)
             )
@@ -41,8 +104,13 @@ class GenerateQuestionService:
 
             if status == "finished":
                 extractedQuestions = self.extractQuestionsFromResponse(payload)
-                exam_id = request_data.get("exam_id")
-                self.persistQuestionsToExam(exam_id, job_id, newGeneratedQuestion, extractedQuestions)
+                if extractedQuestions:
+                    self.persistQuestionsToExam(
+                        exam_id = None, 
+                        job_id = job_id, 
+                        generate = newGeneratedQuestion, 
+                        questions = extractedQuestions
+                    )
 
             db.session.commit()
         except Exception as e:
@@ -58,10 +126,24 @@ class GenerateQuestionService:
         try:
             response = requests.get(url, timeout=15)
             response.raise_for_status()
-            return response.json()
+            try:
+                data = response.json()
+
+                if not isinstance(data, dict) or "status" not in data:
+                    current_app.logger.warning(f"[FetchSttatus] Incomplate response for job_id={job_id}: {data}")
+                    return None
+                
+                if data.get("status") in ("processing", "queued", "pending"):
+                    return {"status": "pending"}
+                
+                return data
+
+            except requests.RequestException as e:
+                current_app.logger.warning(f"[FetchStatus] job_id={job_id} error={e}")
+                return None
+            
         except requests.RequestException as e:
             current_app.logger.warning(f"[FetchStatus] job_id={job_id} error={e}")
-            return None
         
 
     def extractQuestionsFromResponse(self, response: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -132,16 +214,10 @@ class GenerateQuestionService:
     
         return questionsOut
     
-    def parseQuestionData(self, field_value):
-        if not field_value:
-            return {}
-        if isinstance(field_value, dict):
-            return field_value
-        if isinstance(field_value, str):
-            try:
-                return json.loads(field_value)
-            except Exception:
-                return {}
+    def parseQuestionData(self, field_value: Any) -> Dict[str, Any]:
+        res = self.safeJsonLoads(field_value)
+        if isinstance(res, dict):
+            return res
         return {}
 
     def persistQuestionsToExam(
@@ -215,21 +291,19 @@ class GenerateQuestionService:
                         qData[k] = q.get(k)
                 
                 if matchedEntry:
-                    current_app.logger.info(f"[PersistQuestions] Updating existing ExamQuestion id={matchedEntry.id} qId={qId}")
+                    current_app.logger.info(f"[PersistQuestions] Updating existing ExamQuestion id={getattr(matchedEntry, 'id', None)} qId={qId}")
                     # update explicit columns too
-                    matchedEntry.generated_id = generate.id if getattr(generate, "id", None) else matchedEntry.generated_id
+                    matchedEntry.generated_id = generate.id 
                     matchedEntry.module_id = generate.module_id
                     matchedEntry.exam_id = exam_id
                     # update metada object
-                    meta = matchedEntry.question_metadata or {}
-                    if isinstance(meta, str):
-                        try:
-                            meta = json.loads(meta)
-                        except Exception:
-                            meta = {}
+                    meta = self.safeJsonLoads(matchedEntry.question_metadata)
                     meta.update(meta_update)
                     matchedEntry.question_metadata = meta
+                    
                     matchedEntry.question_data = qData
+                    if hasattr(matchedEntry, "updated_at"):
+                        matchedEntry.updated_at = datetime.utcnow()
                     saved_any = True
                 else:
                     current_app.logger.info(f"[PersistQuestions] Creating new ExamQuestion qid={qId}")
@@ -244,6 +318,8 @@ class GenerateQuestionService:
                         question_metadata = newMeta,
                         question_data = qData
                     )
+                    if hasattr(examQuestion, "created_at"):
+                        examQuestion.created_at = datetime.utcnow()
                     db.session.add(examQuestion)
                     saved_any = True
             return saved_any
@@ -260,7 +336,9 @@ class GenerateQuestionService:
         generate = QuestionGenerated.query.filter_by(job_id=job_id).first()
         if generate:
             generate.status = data.get('status', 'unknown')
-            generate.update_at = datetime.utcnow()
+            generate.updated_at = datetime.utcnow()
+            if hasattr(generate, "updated_at"):
+                generate.updated_at = datetime.utcnow()
             db.session.commit()
 
     
@@ -280,12 +358,15 @@ class GenerateQuestionService:
         
         if detail_response is None:
             detail_response = self.fetchExternalStatus(job_id)
-            if not detail_response:    
-                return {"job_id": job_id, "status": "not_found", "questions_saved": False }
+
+        if not detail_response:  
+            current_app.logger.info(f"[UpdateStatus] job_id={job_id} external not ready")
+            return {"job_id": job_id, "status": generate.status, "questions_saved": False }
         
         generate.status = detail_response.get("status", generate.status)
         generate.response_payload = json.dumps(detail_response, ensure_ascii=False)
-        generate.update_at = datetime.utcnow()
+        if hasattr(generate, "updated_at"):
+            generate.updated_at = datetime.utcnow()
         db.session.commit()
 
         if generate.status != "finished":
@@ -319,7 +400,8 @@ class GenerateQuestionService:
             if fresh:
                 record.status = fresh.get("status", record.status)
                 record.response_payload = json.dumps(fresh, ensure_ascii=False)
-                record.update_at = datetime.utcnow()
+                if hasattr(record, "updated_at"):
+                    record.updated_at = datetime.utcnow()
                 db.session.commit()
                 return fresh
         
@@ -330,9 +412,26 @@ class GenerateQuestionService:
         
         return payload
     
-    def getAllQuestions(self):
+    # Backwards-compatible alias for previously-misspelled method
+    getGenaratedQuestions = getGenaratedQuestions
+    
+    def getAllQuestions(self, classroom_id=None):
         try: 
-            records = ExamQuestion.query.filter(ExamQuestion.question_data.isnot(None)).all()
+            query = (
+                db.session.query(ExamQuestion).select_from(ExamQuestion)
+                .filter(ExamQuestion.question_data.isnot(None))
+                .order_by(ExamQuestion.id.desc())
+            )
+
+            query = query.filter(ExamQuestion.question_data.isnot(None))
+
+            if classroom_id:
+                query = (
+                    query.join(Modules, ExamQuestion.module_id == Modules.id)
+                        .filter(Modules.classroom_id == classroom_id)
+                )
+
+            records = query.all()
             questions = []
 
             for r in records:
@@ -366,4 +465,23 @@ class GenerateQuestionService:
             return questions
         except Exception as e:
             current_app.logger.error(f"[GetAllQuestions] error={e}")
+            raise
+
+
+    def deleteQuestion(
+            self,
+            question_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        try:
+            deleted = ExamQuestion.query.filter(
+               cast(ExamQuestion.question_metadata['question_id'], Integer) == question_id
+            ).delete(synchronize_session=False)
+            db.session.commit()
+            return {
+                "deleted": deleted,
+                "message": f"{deleted} question(s) deleted successfully"
+            }
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"[DeletedQuestion] error={e}", exc_info=True)
             raise
